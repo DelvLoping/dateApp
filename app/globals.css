@@ -33,17 +33,17 @@ button { font: inherit; }
 .invitation-title em { color: var(--rose-dark); font-weight: 400; }
 .invitation-note { max-width: 510px; color: #74616b; line-height: 1.7; font-size: clamp(15px, 2vw, 18px); }
 .choice-zone { min-height: 140px; display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 34px; width: 100%; position: relative; }
-.yes-button { height: 58px; padding: 0 28px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 999px; background: var(--plum); background-clip: border-box; color: #fff; line-height: 1.25; box-shadow: 0 14px 30px rgba(66,37,56,.22); transition: transform .45s cubic-bezier(.2,.9,.2,1), background .2s; z-index: 2; cursor: pointer; }
+.yes-button { height: 58px; padding: 0 28px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 999px; background: var(--plum); background-clip: border-box; color: #fff; line-height: 1.25; box-shadow: 0 14px 30px rgba(66,37,56,.22); transform: scale(var(--yes-scale, 1)); transition: transform .45s cubic-bezier(.2,.9,.2,1), background .2s; z-index: 2; cursor: pointer; }
 .yes-button > svg { display: block; flex: 0 0 auto; }
 .yes-button:hover { background: var(--rose-dark); }
 .no-button { height: 52px; padding: 0 24px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background-clip: border-box; color: #765b69; line-height: 1.25; cursor: default; transition: left .19s cubic-bezier(.2,.8,.2,1), top .19s cubic-bezier(.2,.8,.2,1), transform .19s ease-out, opacity .2s; }
-.no-button.is-runaway { position: fixed; z-index: 60; transform: translate(-50%, -50%); background: rgba(255,250,249,.94); border: 0; box-shadow: 0 12px 35px rgba(66,37,56,.18); backdrop-filter: blur(10px); }
+.no-button.is-runaway { position: fixed; z-index: 1; transform: translate(-50%, -50%); background: rgba(255,250,249,.94); border: 0; box-shadow: 0 12px 35px rgba(66,37,56,.18); backdrop-filter: blur(10px); }
 .tease { display: flex; align-items: center; gap: 7px; color: var(--rose-dark); font-size: 13px; animation: fadeUp .35s ease both; }
 .reveal-one { animation: fadeUp .7s .1s both; }
 .reveal-three { animation: fadeUp .7s .4s both; }
 @keyframes titleEnter { from { opacity: 0; transform: translateY(22px) scale(.96); filter: blur(7px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@media (max-width: 640px) { .home-shell, .experience-shell { padding: 12px; } .home-card, .invitation-panel { border-radius: 28px; } .invitation-panel { min-height: calc(100svh - 24px); padding: 30px 20px; } .choice-zone { flex-direction: column; gap: 8px; margin-top: 24px; } .yes-button { width: min(300px, 88%); } .no-button { width: min(260px, 76%); } }
+@media (max-width: 640px) { .home-shell, .experience-shell { padding: 12px; } .home-card, .invitation-panel { border-radius: 28px; } .invitation-panel { min-height: calc(100svh - 24px); padding: 30px 20px; } .choice-zone { flex-direction: column; gap: 8px; margin-top: 24px; } .yes-button { width: min(300px, 82%); transform: scale(var(--yes-scale-mobile, 1)); } .no-button { width: fit-content; min-width: 0; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
 .state-loading { opacity: 0; }
@@ -175,6 +175,8 @@ button { font: inherit; }
 .restart-button:hover { background: #f4e6ea; color: var(--rose-dark); }
 .restart-button:disabled { opacity: .4; cursor: not-allowed; }
 .restart-button svg { width: 15px; height: 15px; }
+.heart-rain { position: fixed; z-index: 999; inset: 0; overflow: hidden; pointer-events: none; background: transparent !important; }
+.falling-heart { position: absolute; top: -14vh; display: block; width: auto; height: auto; margin: 0; padding: 0; border: 0; background: none !important; line-height: 1; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; filter: drop-shadow(0 3px 5px rgba(91,35,58,.12)); will-change: transform, opacity; }
 
 @keyframes sceneIn { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: none; } }
 @keyframes angryDay { 0% { transform: scale(.6) rotate(-12deg); } 55% { transform: scale(1.12) rotate(8deg); } 100% { transform: scale(.92) rotate(0); } }
@@ -188,6 +190,7 @@ button { font: inherit; }
   .venue-card { min-height: 330px; }
 }
 @media (max-width: 760px) {
+  .experience-shell input, .experience-shell textarea, .experience-shell select { font-size: 16px !important; }
   .wide-panel, .venue-panel, .address-panel, .recap-panel { min-height: calc(100svh - 24px); border-radius: 28px; padding: 28px 18px; }
   .schedule-grid { grid-template-columns: 1fr; gap: 16px; }
   .calendar-wrap, .time-picker { min-height: auto; padding: 18px 10px; border-radius: 22px; }

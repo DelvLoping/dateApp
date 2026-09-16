@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import confetti from 'canvas-confetti';
 import { addDays, format, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowRight, Check, ChevronsUpDown, Heart, MapPin, RotateCcw, Send, Sparkles, Star, X } from 'lucide-react';
@@ -73,6 +72,7 @@ function Invitation({ guest }: { guest: string }) {
   const noCount = useSelector((state: RootState) => state.date.noCount);
   const [runaway, setRunaway] = useState<{ left: number; top: number } | null>(null);
   const yesScale = 1 + Math.min(noCount, 6) * 0.1;
+  const mobileYesScale = 1 + Math.min(noCount, 6) * 0.03;
 
   const moveNo = (pointerX: number, pointerY: number, button?: HTMLElement) => {
     const width = window.innerWidth;
@@ -99,6 +99,13 @@ function Invitation({ guest }: { guest: string }) {
       : Math.random() * Math.PI * 2;
     let left = Math.max(minX, Math.min(maxX, originX + Math.cos(angle) * distance));
     let top = Math.max(minY, Math.min(maxY, originY + Math.sin(angle) * distance));
+    const yesButton = document.querySelector<HTMLElement>('.yes-button');
+    const yesRect = yesButton?.getBoundingClientRect();
+
+    if (yesRect && Math.random() < .16) {
+      left = yesRect.left + yesRect.width / 2 + (Math.random() - .5) * Math.min(28, yesRect.width * .12);
+      top = yesRect.top + yesRect.height / 2 + (Math.random() - .5) * 12;
+    }
 
     if (Math.hypot(left - pointerX, top - pointerY) < 82) {
       left = Math.max(minX, Math.min(maxX, originX - Math.cos(angle) * Math.max(115, distance)));
@@ -108,7 +115,7 @@ function Invitation({ guest }: { guest: string }) {
   };
   const refuse = (pointerX: number, pointerY: number, button: HTMLElement) => {
     if (noCount >= 6) {
-      if (window.matchMedia('(pointer: coarse)').matches) moveNo(pointerX, pointerY, button);
+      moveNo(pointerX, pointerY, button);
       return;
     }
     dispatch(actions.sayNo(now()));
@@ -118,7 +125,7 @@ function Invitation({ guest }: { guest: string }) {
   return <section className="invitation-panel scene-card">
     <SceneHeader eyebrow={`Une question pour ${guest}`} title={<>Je t’emmène dîner.<br /><em>Tu me suis&nbsp;?</em></>} />
     <div className="choice-zone">
-      <Button className="yes-button" style={{ transform: `scale(${yesScale})` }} onClick={() => dispatch(actions.nextScene(now()))}>Oui, avec plaisir <ArrowRight /></Button>
+      <Button className="yes-button" style={{ '--yes-scale': yesScale, '--yes-scale-mobile': mobileYesScale } as React.CSSProperties} onClick={() => dispatch(actions.nextScene(now()))}>Oui, avec plaisir <ArrowRight /></Button>
       <Button
         variant="ghost"
         className={`no-button ${runaway ? 'is-runaway' : ''}`}
@@ -319,7 +326,7 @@ function Venue() {
   const selected = useSelector((state: RootState) => state.date.venue);
   const [rejected, setRejected] = useState(false);
   return <section className="venue-panel scene-card">
-    <SceneHeader eyebrow="Le lieu" title={<>Quelle ambiance<br /><em>tu choisis&nbsp;?</em></>} note="Je m’occupe du reste. Oui, même de la réservation." />
+    <SceneHeader eyebrow="Le lieu" title={<>Quelle ambiance<br /><em>tu choisis&nbsp;?</em></>} />
     <div className="venue-grid">
       {venues.map((venue) => <button key={venue.id} type="button" className={`venue-card ${selected === venue.id ? 'selected' : ''} ${venue.blocked && rejected ? 'rejected' : ''}`} onClick={() => {
         if (venue.blocked) { setRejected(true); window.setTimeout(() => setRejected(false), 1900); return; }
@@ -336,20 +343,51 @@ function Venue() {
 }
 
 function launchHeartRain() {
-  const shapes = ['❤️', '💗', '💖', '💕', '💘'].map((text) => confetti.shapeFromText({ text, scalar: 2 }));
-  for (let burst = 0; burst < 10; burst += 1) {
-    window.setTimeout(() => confetti({ particleCount: 210, spread: 110, startVelocity: 38 + burst * 2, gravity: .82, drift: (Math.random() - .5) * .6, ticks: 360, scalar: .9, shapes, origin: { x: Math.random(), y: -.08 }, disableForReducedMotion: true }), burst * 90);
+  document.querySelector('.heart-rain')?.remove();
+  const layer = document.createElement('div');
+  layer.className = 'heart-rain';
+  layer.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(layer);
+
+  const hearts = ['❤️', '🩷', '🧡', '💛', '💚', '💙', '🩵', '💜', '🤎', '🖤', '🤍', '💖', '💗', '💕', '💘', '💝'];
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mobile = window.matchMedia('(max-width: 640px)').matches;
+  const count = reducedMotion ? 24 : mobile ? 80 : 160;
+  let longestAnimation = 0;
+
+  for (let index = 0; index < count; index += 1) {
+    const heart = document.createElement('span');
+    heart.className = 'falling-heart';
+    heart.textContent = hearts[index % hearts.length];
+    heart.style.left = `${Math.random() * 100}%`;
+    heart.style.fontSize = `${mobile ? 17 + Math.random() * 20 : 18 + Math.random() * 28}px`;
+    const delay = reducedMotion ? Math.random() * 300 : Math.random() * 2600;
+    const duration = reducedMotion ? 1400 : 3600 + Math.random() * 3000;
+    const drift = (Math.random() - .5) * (mobile ? 110 : 220);
+    const rotation = (Math.random() - .5) * 520;
+    longestAnimation = Math.max(longestAnimation, delay + duration);
+    layer.appendChild(heart);
+    heart.animate([
+      { transform: 'translate3d(0, -14vh, 0) rotate(0deg)', opacity: 0 },
+      { transform: `translate3d(${drift * .28}px, 18vh, 0) rotate(${rotation * .2}deg)`, opacity: 1, offset: .18 },
+      { transform: `translate3d(${drift}px, 112vh, 0) rotate(${rotation}deg)`, opacity: .95 },
+    ], { duration, delay, easing: 'cubic-bezier(.28,.12,.72,.88)', fill: 'forwards' });
   }
+
+  window.setTimeout(() => layer.remove(), longestAnimation + 250);
 }
 
-function Address() {
+function Address({ scenario }: { scenario: Scenario }) {
   const dispatch = useDispatch();
-  const savedAddress = useSelector((state: RootState) => state.date.address);
+  const data = useSelector((state: RootState) => state.date);
+  const savedAddress = data.address;
   const [value, setValue] = useState(savedAddress);
   const [error, setError] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [chosen, setChosen] = useState(Boolean(savedAddress));
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [notificationError, setNotificationError] = useState(false);
 
   useEffect(() => {
     if (chosen || value.trim().length < 3) {
@@ -372,10 +410,26 @@ function Address() {
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [chosen, value]);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!value.trim()) { setError(true); return; }
-    dispatch(actions.setAddress({ value: value.trim(), at: now() }));
+    const address = value.trim();
+    const venue = venues.find((item) => item.id === data.venue);
+    dispatch(actions.setAddress({ value: address, at: now() }));
+    setSending(true);
+    setNotificationError(false);
+    try {
+      const response = await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ kind: 'confirmation', scenarioId: scenario.id, sender: scenario.sender, guest: scenario.guest, date: data.date, time: data.time, venue: venue?.name, address }),
+      });
+      if (!response.ok) throw new Error('notify');
+    } catch {
+      setSending(false);
+      setNotificationError(true);
+      return;
+    }
     launchHeartRain();
     window.setTimeout(() => dispatch(actions.nextScene(now())), 2100);
   };
@@ -403,7 +457,8 @@ function Address() {
         </div>}
       </div>
       {error && <p className="form-error">Il me faut quand même savoir où te trouver.</p>}
-      <Button className="next-button" type="submit"><span>C’est envoyé</span><Heart fill="currentColor" /></Button>
+      {notificationError && <p className="form-error">Le message n’est pas parti. Réessaie dans un instant.</p>}
+      <Button className="next-button" type="submit" disabled={sending}>{sending ? <span>Envoi…</span> : <><span>C’est envoyé</span><Heart fill="currentColor" /></>}</Button>
     </form>
   </section>;
 }
@@ -417,10 +472,12 @@ function Recap({ scenario }: { scenario: Scenario }) {
   const prettyDate = data.date ? format(new Date(`${data.date}T12:00:00`), "EEEE d MMMM", { locale: fr }) : 'à confirmer';
 
   const save = async () => {
+    const message = review.trim();
+    if (!message) return;
     setStatus('sending');
-    dispatch(actions.setReview({ value: review.trim(), at: now() }));
+    dispatch(actions.setReview({ value: message, at: now() }));
     try {
-      const response = await fetch('/api/notify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ scenarioId: scenario.id, sender: scenario.sender, guest: scenario.guest, date: data.date, time: data.time, venue: venue?.name, address: data.address, review: review.trim() }) });
+      const response = await fetch('/api/notify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'review', scenarioId: scenario.id, sender: scenario.sender, guest: scenario.guest, review: message }) });
       if (!response.ok) throw new Error('notify');
       setStatus('sent');
     } catch { setStatus('error'); }
@@ -436,7 +493,7 @@ function Recap({ scenario }: { scenario: Scenario }) {
       <div><small>Heure</small><strong>{data.time}</strong></div>
       <div><small>Départ</small><strong>{data.address}</strong></div>
     </div>
-    <div className="review-box"><label htmlFor="review">Un mot à ajouter&nbsp;?</label><Textarea id="review" value={review} onChange={(event) => setReview(event.target.value)} placeholder="Promis, je le lirai…" /><Button className="next-button" onClick={save} disabled={status === 'sending' || status === 'sent'}>{status === 'sent' ? <><Check /><span>C’est noté</span></> : status === 'sending' ? <span>Envoi…</span> : <><Send /><span>Envoyer</span></>}</Button>{status === 'error' && <p className="form-error">Le message n’est pas parti. Réessaie dans un instant.</p>}<Button variant="ghost" className="restart-button" disabled={status === 'sending'} onClick={() => dispatch(actions.reset())}><RotateCcw /><span>Un autre date&nbsp;?</span></Button></div>
+    <div className="review-box"><label htmlFor="review">Un mot à ajouter&nbsp;?</label><Textarea id="review" value={review} onChange={(event) => { setReview(event.target.value); if (status !== 'idle') setStatus('idle'); }} placeholder="Promis, je le lirai…" /><Button className="next-button" onClick={save} disabled={!review.trim() || status === 'sending' || status === 'sent'}>{status === 'sent' ? <><Check /><span>C’est noté</span></> : status === 'sending' ? <span>Envoi…</span> : <><Send /><span>Envoyer</span></>}</Button>{status === 'error' && <p className="form-error">Le message n’est pas parti. Réessaie dans un instant.</p>}<Button variant="ghost" className="restart-button" disabled={status === 'sending'} onClick={() => dispatch(actions.reset())}><RotateCcw /><span>Un autre date&nbsp;?</span></Button></div>
   </section>;
 }
 
@@ -445,7 +502,7 @@ function ScenarioInner({ scenarioId }: { scenarioId: string }) {
   const sceneIndex = useSelector((state: RootState) => state.date.scene);
   if (!scenario) return <main className="home-shell"><section className="home-card"><p className="eyebrow">Invitation introuvable</p><h1>Cette adresse ne raconte rien.</h1><p className="home-copy">Vérifie le lien que tu as reçu.</p></section></main>;
   const scene = scenario.flow[Math.min(sceneIndex, scenario.flow.length - 1)];
-  const scenes = { invitation: <Invitation guest={scenario.guest} />, schedule: <Schedule />, venue: <Venue />, address: <Address />, recap: <Recap scenario={scenario} /> };
+  const scenes = { invitation: <Invitation guest={scenario.guest} />, schedule: <Schedule />, venue: <Venue />, address: <Address scenario={scenario} />, recap: <Recap scenario={scenario} /> };
   return <Shell>{scenes[scene]}</Shell>;
 }
 

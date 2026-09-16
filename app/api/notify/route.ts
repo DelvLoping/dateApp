@@ -1,6 +1,7 @@
 import { getScenario } from '@/lib/scenarios';
 
 type Payload = {
+  kind?: 'confirmation' | 'review';
   scenarioId?: string;
   sender?: string;
   guest?: string;
@@ -28,17 +29,26 @@ export async function POST(request: Request) {
     const payload = await request.json() as Payload;
     const scenario = getScenario(payload.scenarioId ?? '');
     const validScenario = Boolean(scenario) && payload.guest === scenario?.guest && payload.sender === scenario?.sender;
-    const validText = Boolean(payload.address?.trim()) && (payload.address?.length ?? 0) <= 240 && (payload.review?.length ?? 0) <= 1000;
-    if (!validScenario || !validText) return Response.json({ error: 'Invalid payload' }, { status: 400 });
-    await telegram([
-      `💌 Nouveau date confirmé`,
-      `${payload.sender ?? 'Florent'} × ${payload.guest}`,
-      `📅 ${payload.date ?? 'Non renseigné'} à ${payload.time ?? 'Non renseignée'}`,
-      `🍽️ ${payload.venue ?? 'Non renseigné'}`,
-      `📍 ${payload.address}`,
-      `🔑 ${payload.scenarioId}`,
-    ].join('\n'));
-    if (payload.review?.trim()) await telegram(`💬 Message de ${payload.guest}\n${payload.review.trim()}`);
+    if (!validScenario) return Response.json({ error: 'Invalid payload' }, { status: 400 });
+
+    if (payload.kind === 'confirmation') {
+      const validConfirmation = Boolean(payload.date && payload.time && payload.venue?.trim() && payload.address?.trim()) && (payload.address?.length ?? 0) <= 240;
+      if (!validConfirmation) return Response.json({ error: 'Invalid confirmation' }, { status: 400 });
+      await telegram([
+        `💌 Nouveau date confirmé`,
+        `${scenario?.sender} × ${scenario?.guest}`,
+        `📅 ${payload.date} à ${payload.time}`,
+        `🍽️ ${payload.venue}`,
+        `📍 ${payload.address?.trim()}`,
+        `🔑 ${payload.scenarioId}`,
+      ].join('\n'));
+    } else if (payload.kind === 'review') {
+      const review = payload.review?.trim();
+      if (!review || review.length > 1000) return Response.json({ error: 'Invalid review' }, { status: 400 });
+      await telegram(`💬 Message de ${scenario?.guest}\n${review}`);
+    } else {
+      return Response.json({ error: 'Invalid notification kind' }, { status: 400 });
+    }
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: 'Notification failed' }, { status: 503 });

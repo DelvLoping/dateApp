@@ -38,6 +38,9 @@ button { font: inherit; }
 .yes-button:hover { background: var(--rose-dark); }
 .no-button { height: 52px; padding: 0 24px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background-clip: border-box; color: #765b69; line-height: 1.25; cursor: default; transition: left .19s cubic-bezier(.2,.8,.2,1), top .19s cubic-bezier(.2,.8,.2,1), transform .19s ease-out, opacity .2s; }
 .no-button.is-runaway { position: fixed; z-index: 1; transform: translate(-50%, -50%); background: rgba(255,250,249,.94); border: 0; box-shadow: 0 12px 35px rgba(66,37,56,.18); backdrop-filter: blur(10px); }
+.no-button.is-runaway.is-hidden { transition-duration: .28s; }
+.no-button.is-runaway.is-peeking { transition-duration: .55s; }
+.no-button.is-hidden, .no-button.is-peeking { pointer-events: none; }
 .tease { display: flex; align-items: center; gap: 7px; color: var(--rose-dark); font-size: 13px; animation: fadeUp .35s ease both; }
 .reveal-one { animation: fadeUp .7s .1s both; }
 .reveal-three { animation: fadeUp .7s .4s both; }
@@ -121,7 +124,7 @@ button { font: inherit; }
 .next-button:disabled { opacity: .35; box-shadow: none; cursor: not-allowed; }
 
 .venue-panel { width: min(1220px, 100%); }
-.venue-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
+.venue-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
 .venue-card { position: relative; min-height: 365px; overflow: hidden; border: 0; border-radius: 24px; padding: 0; text-align: left; background: #ddd; color: #fff; cursor: pointer; box-shadow: 0 15px 30px rgba(42,24,34,.11); transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s; }
 .venue-card:has(.blocked-copy) { cursor: default; }
 .venue-card:hover { transform: translateY(-8px); box-shadow: 0 24px 46px rgba(42,24,34,.2); }
